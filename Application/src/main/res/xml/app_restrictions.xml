@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<restrictions xmlns:android="http://schemas.android.com/apk/res/android" >
+    <restriction
+        android:key="staticRestriction"
+        android:title="@string/static_restriction_title"
+        android:restrictionType="string"
+        android:description="@string/static_restriction_description"
+        android:defaultValue="static restriction default value" />
+</restrictions>

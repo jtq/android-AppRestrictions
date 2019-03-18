@@ -18,13 +18,15 @@ package com.example.android.apprestrictions;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.UserManager;
-import android.preference.PreferenceManager;
-import android.view.View;
 import android.widget.CheckBox;
 import android.widget.TextView;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Set;
 
 /**
  * This is the main user interface of the App Restrictions sample app.  It demonstrates the use
@@ -51,9 +53,7 @@ public class MainActivity extends Activity {
 
     public static final String CUSTOM_CONFIG_KEY = "custom_config";
 
-    private TextView mMultiEntryValue;
-    private TextView mChoiceEntryValue;
-    private TextView mBooleanEntryValue;
+    private TextView mJsonValue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,68 +62,61 @@ public class MainActivity extends Activity {
         // Sets up  user interface elements.
         setContentView(R.layout.main);
 
-        mCustomConfig = (CheckBox) findViewById(R.id.custom_app_limits);
-        final boolean customChecked =
-                PreferenceManager.getDefaultSharedPreferences(this).getBoolean(
-                        CUSTOM_CONFIG_KEY, false);
-        if (customChecked) mCustomConfig.setChecked(true);
-
-        mMultiEntryValue = (TextView) findViewById(R.id.multi_entry_id);
-        mChoiceEntryValue = (TextView) findViewById(R.id.choice_entry_id);
-        mBooleanEntryValue = (TextView) findViewById(R.id.boolean_entry_id);
+        mJsonValue = /*(TextView)*/ findViewById(R.id.restrictions_json_contents);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
+        JSONObject jsonObject;
+        String stringifiedJson;
+
         // If app restrictions are set for this package, when launched from a restricted profile,
         // the settings are available in the returned Bundle as key/value pairs.
         mRestrictionsBundle =
                 ((UserManager) getSystemService(Context.USER_SERVICE))
                         .getApplicationRestrictions(getPackageName());
-        if (mRestrictionsBundle == null) {
-            mRestrictionsBundle = new Bundle();
+        try {
+            jsonObject = _convertBundleToJSON(mRestrictionsBundle);
+            stringifiedJson = jsonObject.toString(2);
         }
+        catch (JSONException e) {
+            stringifiedJson = "# Application restrictions not found: " + e.toString();
+        }
+
+        mJsonValue.setText(stringifiedJson);
+
+        /*if (mRestrictionsBundle == null) {
+            mRestrictionsBundle = new Bundle();
+        }*/
 
         // Reads and displays values from a boolean type restriction entry, if available.
         // An app can utilize these settings to restrict its content under a restricted profile.
-        final String booleanRestrictionValue =
+        /*final String booleanRestrictionValue =
                 mRestrictionsBundle.containsKey(GetRestrictionsReceiver.KEY_BOOLEAN) ?
                         mRestrictionsBundle.getBoolean(GetRestrictionsReceiver.KEY_BOOLEAN) + "":
                         getString(R.string.na);
-        mBooleanEntryValue.setText(booleanRestrictionValue);
-
-        // Reads and displays values from a single choice restriction entry, if available.
-        final String singleChoiceRestrictionValue =
-                mRestrictionsBundle.containsKey(GetRestrictionsReceiver.KEY_CHOICE) ?
-                        mRestrictionsBundle.getString(GetRestrictionsReceiver.KEY_CHOICE) :
-                        getString(R.string.na);
-        mChoiceEntryValue.setText(singleChoiceRestrictionValue);
-
-        // Reads and displays values from a multi-select restriction entry, if available.
-        final String[] multiSelectValues =
-                mRestrictionsBundle.getStringArray(GetRestrictionsReceiver.KEY_MULTI_SELECT);
-        if (multiSelectValues == null || multiSelectValues.length == 0) {
-            mMultiEntryValue.setText(getString(R.string.na));
-        } else {
-            String tempValue = "";
-            for (String value : multiSelectValues) {
-                tempValue = tempValue + value + " ";
-            }
-            mMultiEntryValue.setText(tempValue);
-        }
+        mBooleanEntryValue.setText(booleanRestrictionValue);*/
     }
 
-    /**
-     * Saves custom app restriction to the shared preference.
-     *
-     * This flag is used by {@code GetRestrictionsReceiver} to determine if a custom app
-     * restriction activity should be used.
-     */
-    public void onCustomClicked(View view) {
-        final SharedPreferences.Editor editor =
-                PreferenceManager.getDefaultSharedPreferences(this).edit();
-        editor.putBoolean(CUSTOM_CONFIG_KEY, mCustomConfig.isChecked()).apply();
+    // Convert a Bundle into JSONObject
+    private JSONObject _convertBundleToJSON(Bundle bundle) throws JSONException
+    {
+        JSONObject json = new JSONObject();
+
+        if (bundle != null)
+        {
+            Set<String> keys = bundle.keySet();
+            if (keys != null)
+            {
+                for (String key : keys)
+                {
+                    json.put(key, JSONObject.wrap(bundle.get(key)));
+                }
+            }
+        }
+
+        return json;
     }
 }
